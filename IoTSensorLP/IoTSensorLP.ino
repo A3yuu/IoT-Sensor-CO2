@@ -65,8 +65,9 @@ void setup()
 
 void loop() {
   unsigned long nowTime = millis();
+  if(nowTime < oldTime)oldTime = nowTime;
   //sleep
-  if (abs(nowTime - oldTime) > 600 * 1000) {
+  if (nowTime - oldTime > 600 * 1000) {
     esp_sleep_enable_timer_wakeup(1000);
     esp_deep_sleep_start();
   }

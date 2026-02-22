@@ -9,12 +9,12 @@
 
 const int BUTTON_WPS = 39;
 const int LED_PIN = 27;
-const float TEMPERATURE_OFFSET = 2.5;
+const float TEMPERATURE_OFFSET = 4;
 const int hueRed = 98;
 const int VOC_SAMPLE_RATE = 5000;//ms
 const int CO2_SAMPLE_RATE = 6;//VOC×NUM
 const int SERVER_POST_RATE = 120;//VOC×NUM
-const int wdtTimeout = 60;
+const uint32_t wdtTimeout = 60000;//ms
 
 static CRGB leds[1];
 RTC_DATA_ATTR SaveData saveData;
@@ -25,7 +25,12 @@ RTC_DATA_ATTR int32_t counter = 0;
 void setup()
 {
   setCpuFrequencyMhz(60);
-  esp_task_wdt_init(wdtTimeout, true);
+  esp_task_wdt_config_t wdt_config = {
+    .timeout_ms = wdtTimeout,
+    .idle_core_mask = 0,
+    .trigger_panic = true
+  };
+  esp_task_wdt_init(&wdt_config);
   esp_task_wdt_add(NULL);
   counter++;
   pinMode(BUTTON_WPS, INPUT);
@@ -86,7 +91,9 @@ void setup()
     //Net
     if (counter % SERVER_POST_RATE == 0) {
       while (counter > SERVER_POST_RATE)counter -= SERVER_POST_RATE;
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 100; i++) {
+        esp_task_wdt_reset();
+        Serial.println(WPSStateGet());
         if (WPSStateGet() == STA_GOT_IP) {
           //Spreadsheet
           String dataString = String(measurements.co2) + " " + String(measurements.temperature) + " " + String(measurements.humidity) + " " + String(vocIndex);
@@ -105,13 +112,15 @@ void setup()
 bool wpsFlag = false;
 
 void loop() {
+  esp_task_wdt_reset();
   unsigned long nowTime = millis();
+  if (oldTime > nowTime)oldTime = 0;
   //sleep
-  if (abs(nowTime - oldTime) > 600 * 1000) {
+  if (nowTime - oldTime > 600 * 1000) {
     esp_deep_sleep(1000);
   }
   //WPS start
-  if (!digitalRead(BUTTON_WPS)) {
+  if (!wpsFlag && !digitalRead(BUTTON_WPS)) {
     Serial.println("WPS Start");
     WPSStart();
     leds[0] = CRGB(0, 255, 255);
