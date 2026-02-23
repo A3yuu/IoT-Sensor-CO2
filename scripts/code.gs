@@ -9,6 +9,7 @@ function doPost(e)
   }
   var params = e.postData.getDataAsString().split(" ");
   sheet.insertRows(1,1);
+  sheet.getRange(1, 1).setNumberFormat("yyyy/MM/dd H:mm:ss");
   sheet.getRange(1, 1).setValue(new Date());
   for(i=0;i<params.length;i++){
     sheet.getRange(1, 2+i).setValue(Number(params[i]));

@@ -7,10 +7,21 @@
 	</head>
 
 	<body>
-		<span id="co2Text" style="font-size:4em;">---</span>ppm<br/>
-		<span id="tmpText" style="font-size:2em;">---</span>Åé
-		<span id="humText" style="font-size:2em;">---</span>%RH<br/>
-		<input type="date"></input><br/>
+<div style="width:80%;margin:0 auto;overflow:hidden;">
+  <div style="float:left;width: 50%; background-color:#ffdbdb;">
+		<span id="tmpText" style="font-size:4em;">---</span>Åé&nbsp;
+    </div>
+  <div style="float:left;width: 50%; background-color:#dbedff;">
+		<span id="humText" style="font-size:4em;">---</span>%RH<br/>
+    </div>
+  <div style="float:left;width: 50%; background-color:#ffffdb;">
+    <span id="co2Text" style="font-size:4em;">---</span>ppm&nbsp;
+    </div>
+  <div style="float:left;width: 50%; background-color:#eddbff;">
+		<span id="vocText" style="font-size:4em;">---</span>VOC Index
+    </div>
+</div>
+		<input type="date"></input>
 		<div id="target"></div>
 		<script>
 			//Date
@@ -37,19 +48,30 @@
 			}
 			window.addEventListener('resize', resizeWindow);
 			//Graph
-			google.charts.load('48', {packages: ['corechart']}).then(drawChart);
+			google.charts.load('current', {packages: ['corechart']}).then(drawChart);
 			function reDrawChart() {
 				var options = {
+					width: '100%',
 					height: 640,
+					chartArea: {
+					 	left:48,
+						right:128,
+						bottom:32, 
+						top:32,
+						width: '100%',
+						height: '100%'
+					},
 					series: {
 						0: {targetAxisIndex:0},
 						1: {targetAxisIndex:1},
 						2: {targetAxisIndex:2},
+						3: {targetAxisIndex:3},
 					},
 					vAxes: {
-						0:{title:'',minValue:0,textStyle:{color: 'orange'}},
-						1:{title:'',minValue:0,maxValue:40,textStyle:{color: 'red'}},
-						2:{title:'',minValue:0,maxValue:100,textStyle:{color: 'blue'}}
+						0:{title:'',minValue:0,maxValue:1000,textStyle:{color: 'orange'}},
+						1:{title:'',minValue:0,maxValue:50,textStyle:{color: 'red'}},
+						2:{title:'',minValue:0,maxValue:100,textStyle:{color: 'blue'}},
+						3:{title:'',minValue:0,maxValue:500,textStyle:{color: 'purple'}}
 					},
 					hAxis: {
 						format: 'HH:mm',
@@ -58,9 +80,24 @@
 							max: toChart
 						}
 					},
-					colors: ['orange','red','blue']
+					colors: ['orange','red','blue','purple']
 				};
-				var chart = new google.visualization.LineChart(document.getElementById('target'));
+				var container = document.getElementById('target');
+				var chart = new google.visualization.LineChart(container);
+				//multi vAxes tweek
+				google.visualization.events.addListener(chart, 'ready', function () {
+					var labels = container.getElementsByTagName('text');
+					Array.prototype.forEach.call(labels, function(label) {
+						if (label.getAttribute('fill') === '#0000ff') {
+							var xCoord = parseFloat(label.getAttribute('x'));
+							label.setAttribute('x', xCoord + 32);
+						}
+						if (label.getAttribute('fill') === '#800080') {
+							var xCoord = parseFloat(label.getAttribute('x'));
+							label.setAttribute('x', xCoord + 64);
+						}
+					});
+				});
 				chart.draw(data, options);
 			}
 			function drawChart() {
@@ -75,10 +112,12 @@
 					document.getElementById('co2Text').innerHTML=data.getFormattedValue(0, 1);
 					document.getElementById('tmpText').innerHTML=data.getFormattedValue(0, 2);
 					document.getElementById('humText').innerHTML=data.getFormattedValue(0, 3);
+					document.getElementById('vocText').innerHTML=data.getFormattedValue(0, 4);
 				}
 				data.setColumnLabel(1,'CO2(ppm)');
 				data.setColumnLabel(2,'Temperature(Åé)');
 				data.setColumnLabel(3,'Humidity(%RH)');
+				data.setColumnLabel(4,'VOC Index');
 				firstDataFlag = false;
 				reDrawChart() ;
 			}
